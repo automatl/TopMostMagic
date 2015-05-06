@@ -6,11 +6,13 @@ using System.Windows.Forms;
 
 namespace TopMostMagic
 {
+	// TODO: this one can be used in many ways so it will do wrong things: multiple registrations without unregistering, etc...
 	public class SystemHotkey : System.ComponentModel.Component, IDisposable
 	{
 		private System.ComponentModel.Container components = null;
 		protected Win32.DummyWindowWithEvent m_Window = new Win32.DummyWindowWithEvent();
-		protected Shortcut m_HotKey = Shortcut.None;
+		//protected Shortcut m_HotKey = Shortcut.None;
+		ShortcutInfo _shortcut;
 		protected bool isRegistered = false;
 		public event System.EventHandler Pressed;
 		public event System.EventHandler Error;
@@ -58,21 +60,29 @@ namespace TopMostMagic
 
 		protected bool UnregisterHotkey()
 		{
-			return Win32.User32.UnregisterHotKey(m_Window.Handle, this.GetType().GetHashCode());
+			if (isRegistered)
+			{
+				isRegistered = !Win32.User32.UnregisterHotKey(m_Window.Handle, this.GetType().GetHashCode());
+
+				return isRegistered;
+			}
+			else
+			{
+				return false;
+			}
 		}
 
-		protected bool RegisterHotkey(Shortcut key)
+		protected bool RegisterHotkey()
 		{
-			int mod = 0;
-			Keys k2 = Keys.None;
-			if (((int)key & (int)Keys.Alt) == (int)Keys.Alt) { mod += (int)Win32.Modifiers.MOD_ALT; k2 = Keys.Alt; }
-			if (((int)key & (int)Keys.Shift) == (int)Keys.Shift) { mod += (int)Win32.Modifiers.MOD_SHIFT; k2 = Keys.Shift; }
-			if (((int)key & (int)Keys.Control) == (int)Keys.Control) { mod += (int)Win32.Modifiers.MOD_CONTROL; k2 = Keys.Control; }
-
-			System.Diagnostics.Debug.Write(mod.ToString() + " ");
-			System.Diagnostics.Debug.WriteLine((((int)key) - ((int)k2)).ToString());
-
-			return Win32.User32.RegisterHotKey(m_Window.Handle, this.GetType().GetHashCode(), (int)mod, ((int)key) - ((int)k2));
+			if (_shortcut.isSomething())
+			{
+				isRegistered = Win32.User32.RegisterHotKey(m_Window.Handle, this.GetType().GetHashCode(), _shortcut.Modifier, _shortcut.KeyCode);
+				return isRegistered;
+			}
+			else
+			{
+				return false;
+			}
 		}
 
 		public bool IsRegistered
@@ -81,44 +91,16 @@ namespace TopMostMagic
 		}
 
 
-		[DefaultValue(Shortcut.None)]
-		public Shortcut Shortcut
+		public ShortcutInfo Shortcut
 		{
-			get { return m_HotKey; }
+			get
+			{
+				return _shortcut;
+			}
 			set
 			{
-				if (DesignMode)
-				{
-					m_HotKey = value; return;
-				}
-				if ((isRegistered) && (m_HotKey != value))
-				{
-					if (UnregisterHotkey())
-					{
-						System.Diagnostics.Debug.WriteLine("Unreg: OK");
-						isRegistered = false;
-					}
-					else
-					{
-						if (Error != null) Error(this, EventArgs.Empty);
-						System.Diagnostics.Debug.WriteLine("Unreg: ERR");
-					}
-				}
-				if (value == Shortcut.None)
-				{
-					m_HotKey = value; return;
-				}
-				if (RegisterHotkey(value))
-				{
-					System.Diagnostics.Debug.WriteLine("Reg: OK");
-					isRegistered = true;
-				}
-				else
-				{
-					if (Error != null) Error(this, EventArgs.Empty);
-					System.Diagnostics.Debug.WriteLine("Reg: ERR");
-				}
-				m_HotKey = value;
+				_shortcut = value;
+				RegisterHotkey();
 			}
 		}
 	}

@@ -36,6 +36,9 @@
     <ApplicationIcon>img\TopMostMagicMain.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MonoLib">
+      <HintPath>.\MonoLib.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
@@ -61,7 +64,7 @@
     <Compile Include="SystemHotkey.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="SystemHotkeyEnumeration.cs" />
+    <Compile Include="ShortcutInfo.cs" />
     <Compile Include="Win32.cs" />
     <EmbeddedResource Include="ChangeHotkeyForm.resx">
       <DependentUpon>ChangeHotkeyForm.cs</DependentUpon>

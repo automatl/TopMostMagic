@@ -15,25 +15,7 @@ namespace TopMostMagic
 	{
 		protected SystemHotkey hotkey;
 
-		[DllImport("user32.dll")]
-		static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-		[DllImport("user32.dll")]
-		private static extern IntPtr GetForegroundWindow();
-		[DllImport("user32.dll")]
-		static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-		static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-		static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
-
-		static readonly int GWL_EXSTYLE = -20;
-
-		const UInt32 WS_EX_TOPMOST = 0x0008;
-
-		const UInt32 SWP_NOSIZE = 0x0001;
-		const UInt32 SWP_NOMOVE = 0x0002;
-		const UInt32 SWP_SHOWWINDOW = 0x0040;
-
-		const string hotkeyPath = "hotkey";
+		const string hotkeyPath = "hotkey_binary";
 
 		public MainForm()
 		{
@@ -62,52 +44,39 @@ namespace TopMostMagic
 			this.Owner = form1;
 		}
 
-		private string readHotkey()
+		private ShortcutInfo readHotkey()
 		{
-			string hotkey = "CtrlT";
+			ShortcutInfo hotkey = new ShortcutInfo();
 
 			if (File.Exists(MainForm.hotkeyPath))
 			{
-				TextReader tr = new StreamReader(MainForm.hotkeyPath);
-				string buf = tr.ReadToEnd();
-
-				if (buf.Length > 0)
+				using (var tr = new BinaryReader(File.Open(MainForm.hotkeyPath, FileMode.Open)))
 				{
-					hotkey = buf;
+					hotkey.Modifier = tr.ReadUInt32();
+					hotkey.KeyCode = tr.ReadUInt32();
 				}
-				tr.Close();
 			}
 
 			return hotkey;
 		}
 
-		private void writeHotkey(string value)
+		private void writeHotkey(ShortcutInfo value)
 		{
 			if (File.Exists(MainForm.hotkeyPath))
 			{
 				File.Delete(MainForm.hotkeyPath);
 			}
 
-			StreamWriter file = new System.IO.StreamWriter(MainForm.hotkeyPath);
-			file.Write(value);
-			file.Close();
+			using (var file = new System.IO.BinaryWriter(File.Open(MainForm.hotkeyPath, FileMode.OpenOrCreate)))
+			{
+				file.Write(value.Modifier);
+				file.Write(value.KeyCode);
+			}
 		}
 
 		private void initHotkeyObj()
 		{
-			string hotkey = this.readHotkey();
-
-			try
-			{
-				this.hotkey.Shortcut = SystemHotkeyEnumeration.getValueByKey(hotkey);
-			}
-			catch (InvalidSystemHotkeyException ex)
-			{
-				ex.Message.Clone();
-				MessageBox.Show("Invalid shortcut passed - [" + hotkey + "] falling back to Ctrl+T", "TopMost Magic", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				this.hotkey.Shortcut = Shortcut.CtrlT;
-			}
-			
+			this.hotkey.Shortcut = this.readHotkey();
 		}
 
 		private void Form1_Load(object sender, EventArgs e)
@@ -124,19 +93,19 @@ namespace TopMostMagic
 
 		public void handler(object sender, EventArgs e)
 		{
-			IntPtr windowHandle = GetForegroundWindow();
+			IntPtr windowHandle = Win32.User32.GetForegroundWindow();
 
 			IntPtr flag;
-			if ((GetWindowLong(windowHandle, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0)
+			if ((Win32.User32.GetWindowLong(windowHandle, Win32.User32.GWL_EXSTYLE) & Win32.User32.WS_EX_TOPMOST) != 0)
 			{
-				flag = HWND_NOTOPMOST;
+				flag = Win32.User32.HWND_NOTOPMOST;
 			}
 			else
 			{
-				flag = HWND_TOPMOST;
+				flag = Win32.User32.HWND_TOPMOST;
 			}
 
-			SetWindowPos(windowHandle, flag, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+			Win32.User32.SetWindowPos(windowHandle, flag, 0, 0, 0, 0, Win32.User32.SWP_NOMOVE | Win32.User32.SWP_NOSIZE | Win32.User32.SWP_SHOWWINDOW);
 		}
 
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -149,7 +118,7 @@ namespace TopMostMagic
 			string txt = 
 				"Always missed an ability to make any window 'Always On Top' ;)\n" + 
 				"You can do that pressing by " + 
-				SystemHotkeyEnumeration.humanizeShortcut(this.hotkey.Shortcut) + 
+				this.hotkey.Shortcut.ToString() + 
 				" now (affects active window).\n(c) 2013, Automatl";
 
 			MessageBox.Show(txt, "TopMost Magic", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -157,7 +126,7 @@ namespace TopMostMagic
 
 		private void changeHotkeyClick(object sender, EventArgs e)
 		{
-			ChangeHotkeyForm form = new ChangeHotkeyForm(this.hotkey.Shortcut.ToString());
+			ChangeHotkeyForm form = new ChangeHotkeyForm(this.hotkey.Shortcut);
 			DialogResult res = form.ShowDialog();
 
 			if (res == DialogResult.OK)

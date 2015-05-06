@@ -10,39 +10,57 @@ namespace TopMostMagic
 {
 	public partial class ChangeHotkeyForm : Form
 	{
-		private string current;
-		private string result;
-		public string getResult()
+		private ShortcutInfo result;
+		public ShortcutInfo getResult()
 		{
 			return this.result;
 		}
 
-		private void setResult()
+		private void updateResult()
 		{
-			this.result = this.hotkeyComboBox.Text;
+			if (txtButton.Text.Length > 0)
+			{
+				this.result = new ShortcutInfo(chkAlt.Checked, chkCtrl.Checked, chkShift.Checked, txtButton.Text[0]);
+			}
 		}
 
-		public ChangeHotkeyForm(string current)
+		public ChangeHotkeyForm(ShortcutInfo current)
 		{
-			this.current = current;
+			result = current;
 			InitializeComponent();
+
+			chkAlt.Checked = result.hasAlt();
+			chkShift.Checked = result.hasShift();
+			chkCtrl.Checked = result.hasCtrl();
+			txtButton.Text = ((char)result.KeyCode).ToString();
 		}
 
 		private void ChangeHotkeyForm_Load(object sender, EventArgs e)
 		{
-			List<string> items = SystemHotkeyEnumeration.getShortcutArray(true);
-
-			foreach (string item in items)
-			{
-				this.hotkeyComboBox.Items.Add(item);
-			}
-
-			this.hotkeyComboBox.Text = SystemHotkeyEnumeration.humanizeShortcut(this.current);
+			this.result = new ShortcutInfo();
 		}
 
 		private void okButton_Click(object sender, EventArgs e)
 		{
-			this.setResult();
+			updateResult();
+		}
+
+		private void txtButton_KeyUp(object sender, KeyEventArgs e)
+		{
+			e.Handled = true;
+
+			if (e.KeyCode >= Keys.A && e.KeyCode <= Keys.Z)
+			{
+				txtButton.Text = e.KeyCode.ToString();
+			}
+			else if (e.KeyCode >= Keys.D0 && e.KeyCode <= Keys.D9)
+			{
+				txtButton.Text = e.KeyCode.ToString()[1].ToString();
+			}
+			else
+			{
+				txtButton.Text = "";
+			}
 		}
 	}
 }

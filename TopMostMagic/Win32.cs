@@ -2,14 +2,33 @@
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
+// TODO: rename to TopMostMagic.Interop or TopMistMagic.NativeInterface or something like that
 namespace TopMostMagic.Win32
 {
 	public class User32
 	{
 		[DllImport("user32.dll")]
-		public static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vlc);
+		public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vlc);
 		[DllImport("user32.dll")]
 		public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+		[DllImport("user32.dll")]
+		public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+		[DllImport("user32.dll")]
+		public static extern IntPtr GetForegroundWindow();
+		[DllImport("user32.dll")]
+		public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+		public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+		public static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+
+		public static readonly int GWL_EXSTYLE = -20;
+
+		public const UInt32 WS_EX_TOPMOST = 0x0008;
+
+		public const UInt32 SWP_NOSIZE = 0x0001;
+		public const UInt32 SWP_NOMOVE = 0x0002;
+		public const UInt32 SWP_SHOWWINDOW = 0x0040;
 	}
 
 	public class Kernel32
