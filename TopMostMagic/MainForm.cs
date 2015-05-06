@@ -119,7 +119,7 @@ namespace TopMostMagic
 				"Always missed an ability to make any window 'Always On Top' ;)\n" + 
 				"You can do that pressing by " + 
 				this.hotkey.Shortcut.ToString() + 
-				" now (affects active window).\n(c) 2013, Automatl";
+				" now (affects active window).\n(c) 2015, Automatl";
 
 			MessageBox.Show(txt, "TopMost Magic", MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
